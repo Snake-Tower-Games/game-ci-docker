@@ -86,3 +86,13 @@ jobs:
         run: |
           docker build ./images/windows/hub/ `
 
+
+
+      - name: Save Docker image
+        run: docker save unityci/hub:windows-latest -o hub-windows.tar
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-windows-image
+          path: hub-windows.tar
