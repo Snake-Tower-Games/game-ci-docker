@@ -3,8 +3,8 @@ name: FIXED -> New Windows Hub Version ⚙
 on:
   repository_dispatch:
     types:
-      - new_hub_images_requested
-      - new_windows_hub_image_requested
+      - fixed_new_hub_images_requested
+      - fixed_new_windows_hub_image_requested
   workflow_dispatch:
     inputs:
       jobId:
