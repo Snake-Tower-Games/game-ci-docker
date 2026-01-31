@@ -1,0 +1,75 @@
+name: New Windows Hub Version ⚙
+
+on:
+  repository_dispatch:
+    types:
+      - new_hub_images_requested
+      - new_windows_hub_image_requested
+  workflow_dispatch:
+    inputs:
+      jobId:
+        description: "Job ID"
+        required: true
+        default: "dryRun"
+      repoVersionFull:
+        description: "All digits of the latest tag of this repository, e.g. `1.23.45`"
+        required: true
+      repoVersionMinor:
+        description: "Minor digit of that tag, e.g. `23`"
+        required: true
+      repoVersionMajor:
+        description: "Major digit of that tag, e.g. `1`"
+        required: true
+
+# Further reading:
+# https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#repository_dispatch
+# https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-a-repository-dispatch-event
+# https://developer.github.com/webhooks/event-payloads/#repository_dispatch
+
+jobs:
+  build:
+    name: "🛠 Build unityci/hub"
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout latest release tag
+        run: |
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          git checkout $LATEST_TAG
+        shell: bash
+
+      #################
+      #   Variables   #
+      #################
+      - name: Setup Build Parameters
+        id: buildParameters
+        run: |
+          if ("${{ github.event.inputs.jobId }}")
+          {
+            # Workflow Dispatch
+            echo "jobId={{ github.event.inputs.jobId }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionFull={{ github.event.inputs.repoVersionFull }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMinor={{ github.event.inputs.repoVersionMinor }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMajor={{ github.event.inputs.repoVersionMajor }}" >> $Env:GITHUB_OUTPUT
+          } else
+          {
+            # Repo Dispatch
+            echo "jobId=${{ github.event.client_payload.jobId }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionFull=${{ github.event.client_payload.repoVersionFull }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMinor=${{ github.event.client_payload.repoVersionMinor }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMajor=${{ github.event.client_payload.repoVersionMajor }}" >> $Env:GITHUB_OUTPUT
+          }
+
+      - name: Show hook input
+        run: |
+          echo "Event ${{ github.event.action }}"
+          echo "jobId: ${{ steps.buildParameters.outputs.jobId }}"
+          echo "repoVersion (full): ${{ steps.buildParameters.outputs.repoVersionFull }}"
+          echo "repoVersion (only minor and major): ${{ steps.buildParameters.outputs.repoVersionMinor }}"
+          echo "repoVersion (only major): ${{ steps.buildParameters.outputs.repoVersionMajor }}"
+
+      # TODO: Cache layers, currently not supported on windows
