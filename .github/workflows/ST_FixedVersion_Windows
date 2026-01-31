@@ -1,4 +1,4 @@
-name: New Windows Hub Version ⚙
+name: FIXED -> New Windows Hub Version ⚙
 
 on:
   repository_dispatch:
