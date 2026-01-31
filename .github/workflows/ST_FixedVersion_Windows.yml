@@ -85,8 +85,4 @@ jobs:
         id: build_windows_hub_image
         run: |
           docker build ./images/windows/hub/ `
-            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionFull }} `
-            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionMinor }} `
-            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionMajor }} `
-            --tag unityci/hub:windows-latest
 
