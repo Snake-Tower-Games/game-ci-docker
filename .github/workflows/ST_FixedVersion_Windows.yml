@@ -73,3 +73,24 @@ jobs:
           echo "repoVersion (only major): ${{ steps.buildParameters.outputs.repoVersionMajor }}"
 
       # TODO: Cache layers, currently not supported on windows
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+      #################
+      #   Hub image   #
+      #################
+      - name: Build and Publish Windows Hub Image
+        id: build_windows_hub_image
+        run: |
+          docker build ./images/windows/hub/ `
+            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionFull }} `
+            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionMinor }} `
+            --tag unityci/hub:windows-${{ steps.buildParameters.outputs.repoVersionMajor }} `
+            --tag unityci/hub:windows-latest
+
