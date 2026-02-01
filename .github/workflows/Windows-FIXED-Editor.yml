@@ -1,0 +1,131 @@
+name: FIXED VERSION Windows Editor Version - MULTI-SUPPORT🗔
+
+on:
+  repository_dispatch:
+    types:
+      - fixed_version_widnwos_editor_multisupport
+  workflow_dispatch:
+    inputs:
+      jobId:
+        description: "Job ID"
+        required: true
+        default: "dryRun"
+      editorVersion:
+        description: "Unity Editor Version"
+        required: true
+        default: "6000.0.58f2"
+      changeSet:
+        description: "Unity Editor Changeset"
+        required: true
+        default: "92dee566b325"
+      repoVersionFull:
+        description: "All digits of the latest tag of this repository, e.g. `1.23.45`"
+        required: true
+      repoVersionMinor:
+        description: "Minor digit of that tag, e.g. `23`"
+        required: true
+      repoVersionMajor:
+        description: "Major digit of that tag, e.g. `1`"
+        required: true
+
+# Further reading:
+# https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows#repository_dispatch
+# https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-a-repository-dispatch-event
+# https://developer.github.com/webhooks/event-payloads/#repository_dispatch
+
+jobs:
+  buildImage:
+    name: "🛠 Build unityci/editor (${{ matrix.targetPlatform }})"
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - base
+          # - lumin # TODO: Determine if we can build for lumin. Requires 3rd party SDK with several versions
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout latest release tag
+        run: |
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          git checkout $LATEST_TAG
+        shell: bash
+
+      #################
+      #   Variables   #
+      #################
+      - name: Setup Build Parameters
+        id: buildParameters
+        run: |
+          if ("${{ github.event.inputs.jobId }}")
+          {
+            # Workflow Dispatch
+            echo "jobId=${{ github.event.inputs.jobId }}" >> $Env:GITHUB_OUTPUT
+            echo "editorVersion=${{ github.event.inputs.editorVersion }}" >> $Env:GITHUB_OUTPUT
+            echo "changeSet=${{ github.event.inputs.changeSet }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionFull=${{ github.event.inputs.repoVersionFull }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMinor=${{ github.event.inputs.repoVersionMinor }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMajor=${{ github.event.inputs.repoVersionMajor }}" >> $Env:GITHUB_OUTPUT
+          } else
+          {
+            # Repo Dispatch
+            echo "jobId=${{ github.event.client_payload.jobId }}" >> $Env:GITHUB_OUTPUT
+            echo "editorVersion=${{ github.event.client_payload.editorVersion }}" >> $Env:GITHUB_OUTPUT
+            echo "changeSet=${{ github.event.client_payload.changeSet }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionFull=${{ github.event.client_payload.repoVersionFull }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMinor=${{ github.event.client_payload.repoVersionMinor }}" >> $Env:GITHUB_OUTPUT
+            echo "repoVersionMajor=${{ github.event.client_payload.repoVersionMajor }}" >> $Env:GITHUB_OUTPUT
+          }
+
+      - name: Show hook input
+        run: |
+          echo "Event ${{ github.event.action }}"
+          echo "jobId: ${{ steps.buildParameters.outputs.jobId }}"
+          echo "Unity editor version: ${{ steps.buildParameters.outputs.editorVersion }}"
+          echo "Unity changeset: ${{ steps.buildParameters.outputs.changeSet }}"
+          echo "repoVersion (full): ${{ steps.buildParameters.outputs.repoVersionFull }}"
+          echo "repoVersion (only minor and major): ${{ steps.buildParameters.outputs.repoVersionMinor }}"
+          echo "repoVersion (only major): ${{ steps.buildParameters.outputs.repoVersionMajor }}"
+
+      #############
+      #   Setup   #
+      #############
+
+      #######################
+      #   Free disk space   #
+      #######################
+      # TODO: Determine what we can free on windows
+
+      ############################
+      #   Pull previous images   #
+      ############################
+      - name: Pull windows base image (must exist)
+        run: docker pull unityci/base:windows-latest
+
+      - name: Pull windows hub image (must exist)
+        run: docker pull unityci/hub:windows-latest
+
+      ############################
+      #   Windows Editor image   #
+      ############################
+      - name: Build and Publish Windows Editor Image
+        id: build_windows_editor_image
+        continue-on-error: true
+        run: docker build ./images/windows/editor/ --tag unityci/editor:windows-latest
+        
+          ### Warning: If we once publish latest, we will have to do it forever. Lets not do that unless it's needed ###
+          ### Another warning: order is important: We go from specific to unspecific with the exception of the most specific tag which is used to check if the image is already there ###
+
+      - name: Save Docker image
+        run: docker save unityci/editor:windows-latest -o editor-windows.tar
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: editor-windows-image
+          path: editor-windows.tar
