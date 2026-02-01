@@ -21,8 +21,8 @@ SHELL ["bash.exe", "-c"]
 # Install Editor
 # The portion after the & is to change the exit code to 0 if we exited 1 from
 # the installation. Otherwise docker believes there was an error
-ARG version
-ARG changeSet
+ARG version="6000.0.58f2"
+ARG changeSet="92dee566b325"
 
 RUN "mkdir -p /var/log && mkdir -p C:/UnityEditor"
 
