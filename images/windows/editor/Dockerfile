@@ -10,6 +10,8 @@ FROM $hubImage AS Builder
 # Using bash to process unity install
 RUN choco install git --no-progress -y
 
+RUN choco install vcredist2013 --no-progress -y --params "/InstallAll"
+
 SHELL ["cmd", "/S", "/C"]
 
 RUN setx path "C:\\Program Files\\Git\\bin;%path%"
@@ -29,6 +31,8 @@ RUN "C:/Program\ Files/Unity\ Hub/Unity\ Hub.exe -- --headless install-path --se
 RUN "C:/Program\ Files/Unity\ Hub/Unity\ Hub.exe -- --headless install \
                                                     --version $version \
                                                     --changeset $changeSet \
+                                                    -m linux-mono \
+                                                    -m mac-mono \
                                                     | tee /var/log/install-editor.log \
                                                     && grep 'Error' /var/log/install-editor.log \
                                                     | exit $(wc -l)"
