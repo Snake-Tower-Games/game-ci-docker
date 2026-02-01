@@ -67,7 +67,7 @@ COPY --from=Builder C:/windows/system32/MSVCP100.dll \
                     C:/windows/system32/
 
 # Add version to file at editor path
-ARG version
+ARG version="6000.0.58f2"
 RUN echo "$Env:version" > "C:/UnityEditor/$Env:version/version"
 
 RUN setx -M UNITY_PATH "C:/UnityEditor/$Env:version"
